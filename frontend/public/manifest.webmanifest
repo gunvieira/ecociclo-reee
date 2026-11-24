@@ -1,0 +1,10 @@
+{
+  "name": "EcoCiclo REEE — Gestão de Eletrônicos",
+  "short_name": "EcoCiclo",
+  "description": "Acompanhe garantias, vida útil de produtos eletrônicos e descarte REEE de forma consciente.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "lang": "pt-BR"
+}

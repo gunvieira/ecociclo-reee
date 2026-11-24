@@ -1,0 +1,12 @@
+{
+  "name": "ecociclo-reee-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Monorepo EcoCiclo REEE - IFPR Campus Londrina (CAUF)",
+  "scripts": {
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build"
+  }
+}
