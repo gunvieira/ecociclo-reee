@@ -10,12 +10,12 @@ dist/
 build/
 *.tsbuildinfo
 
-# Variáveis de ambiente e segredos (LGPD / RNF03)
+# Variáveis de ambiente locais
 .env
 .env.local
 .env.*.local
-*serviceAccountKey*.json
-firebase-adminsdk-*.json
+# ATENÇÃO: A chave firebase-adminsdk está versionada apenas porque o repositório
+# do grupo é PRIVADO. Nunca torne o repositório público com a chave no histórico!
 
 # Dados locais de desenvolvimento (modo mock/local)
 backend/data/*.json

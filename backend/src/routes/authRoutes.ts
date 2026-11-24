@@ -1,5 +1,6 @@
+import crypto from 'crypto';
 import { Router, Request, Response } from 'express';
-import { isFirebaseEnabled } from '../config/firebase';
+import { firebaseAuth, isFirebaseEnabled } from '../config/firebase';
 import { AuthenticatedRequest, requireAuth } from '../middlewares/authMiddleware';
 import {
   createUserRecord,
@@ -13,7 +14,7 @@ import { UserRole } from '../types/models';
 
 export const authRouter = Router();
 
-// RF01 + RNF03: Cadastro de usuário com consentimento explícito LGPD
+// RF01 + RNF03: Cadastro de usuário com consentimento explícito LGPD + sincronização Firebase Auth
 authRouter.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password, role, lgpdConsent } = req.body as {
@@ -47,16 +48,44 @@ authRouter.post('/register', async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const existing = await findUserByEmail(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const existing = await findUserByEmail(normalizedEmail);
     if (existing) {
       res.status(409).json({ error: 'Já existe uma conta cadastrada com este e-mail.' });
       return;
     }
 
+    let userId: string = crypto.randomUUID();
+
+    // Se o Firebase Auth estiver ativo no projeto, registra também no Firebase Authentication!
+    if (isFirebaseEnabled && firebaseAuth) {
+      try {
+        const fbUser = await firebaseAuth.createUser({
+          uid: userId,
+          email: normalizedEmail,
+          password,
+          displayName: name.trim(),
+        });
+        userId = fbUser.uid;
+      } catch (fbErr: unknown) {
+        const code = (fbErr as { code?: string })?.code;
+        if (code === 'auth/email-already-exists') {
+          const existingFb = await firebaseAuth.getUserByEmail(normalizedEmail);
+          userId = existingFb.uid;
+        } else {
+          console.warn(
+            '[Firebase Auth] Aviso ao sincronizar usuário no Authentication (verifique se Email/Senha foi ativado no console):',
+            code || fbErr
+          );
+        }
+      }
+    }
+
     const validRole: UserRole = role === 'manager' ? 'manager' : 'consumer';
     const userRecord = await createUserRecord({
+      id: userId,
       name,
-      email,
+      email: normalizedEmail,
       passwordHash: hashPassword(password),
       role: validRole,
     });
