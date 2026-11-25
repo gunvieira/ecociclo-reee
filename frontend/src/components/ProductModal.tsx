@@ -262,7 +262,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
           {/* Upload de Nota Fiscal (RF02) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Nota Fiscal — Foto ou PDF (RF02)
+              Nota Fiscal — Foto ou PDF
             </label>
             {receipt ? (
               <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">

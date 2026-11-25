@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Recycle, ShieldCheck, Smartphone, AlertCircle, Building2, UserCheck } from 'lucide-react';
+import { Recycle, AlertCircle, Building2, UserCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types';
 
@@ -183,7 +183,7 @@ export const AuthPage: React.FC = () => {
                   className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-600"
                 />
                 <span className="text-xs text-slate-600 leading-relaxed">
-                  <strong className="text-slate-800">Termo LGPD (RNF03):</strong> Concordo com o
+                  <strong className="text-slate-800">Termo LGPD:</strong> Concordo com o
                   armazenamento seguro dos dados dos meus equipamentos e anexos de notas fiscais
                   exclusivamente para gestão de garantia e ciclo de vida.
                 </span>
@@ -203,16 +203,6 @@ export const AuthPage: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <Smartphone className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Design Mobile-First</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span>Proteção LGPD</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -145,7 +145,7 @@ const DashboardView: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-emerald-100/80 truncate">
-                Olá, {user?.name} ({user?.role === 'manager' ? 'Gestor / Cooperativa' : 'Consumidor'})
+                Olá, {user?.name}
               </p>
             </div>
           </div>
@@ -237,7 +237,7 @@ const DashboardView: React.FC = () => {
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            Inventário Virtual (RF02)
+            Inventário Virtual
           </button>
           <button
             type="button"
@@ -248,7 +248,7 @@ const DashboardView: React.FC = () => {
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            <span>Alertas Automáticos (RF03)</span>
+            <span>Alertas Automáticos</span>
             {alerts.length > 0 && (
               <span
                 className={`px-1.5 py-0.5 rounded-full text-[10px] ${
@@ -270,7 +270,7 @@ const DashboardView: React.FC = () => {
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            Mapa de Ecopontos (RF04)
+            Mapa de Ecopontos
           </button>
           {isManager && (
             <button
@@ -282,7 +282,7 @@ const DashboardView: React.FC = () => {
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              Painel do Gestor (RF12)
+              Painel do Gestor
             </button>
           )}
         </nav>
@@ -536,7 +536,7 @@ const DashboardView: React.FC = () => {
           <section className="space-y-3">
             <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
               <h2 className="text-base font-bold text-slate-900">
-                Alertas Automáticos de Garantia e Vida Útil (RF03)
+                Alertas Automáticos de Garantia e Vida Útil
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Monitoramento ativo para evitar perda de prazos de garantia e combater a retenção

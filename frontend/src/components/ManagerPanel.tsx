@@ -66,7 +66,7 @@ export const ManagerPanel: React.FC = () => {
             <Building2 className="h-5 w-5 text-emerald-700" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900">Painel do Gestor de Coleta (RF12)</h2>
+            <h2 className="text-base font-bold text-slate-900">Painel do Gestor de Coleta</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Cadastre e mantenha atualizados os pontos de coleta da sua cooperativa, ONG ou órgão
               público.

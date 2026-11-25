@@ -122,7 +122,7 @@ export const EcopointsView: React.FC<EcopointsViewProps> = ({ initialWasteFilter
       <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-bold text-slate-900">
-            Mapa de Pontos de Coleta de REEE (RF04)
+            Mapa de Pontos de Coleta de REEE
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">{geoMessage[geoStatus]}</p>
         </div>
