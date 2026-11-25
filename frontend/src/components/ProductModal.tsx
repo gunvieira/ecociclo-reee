@@ -27,13 +27,19 @@ interface ProductModalProps {
   }) => Promise<void>;
 }
 
+// toISOString() usa UTC: no Brasil, após as 21h, retornaria a data do dia seguinte
+function toLocalIsoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
 export const ProductModal: React.FC<ProductModalProps> = ({
   isOpen,
   editingProduct,
   onClose,
   onSave,
 }) => {
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayIso = toLocalIsoDate(new Date());
 
   const [name, setName] = useState('');
   const [brand, setBrand] = useState('');
@@ -207,6 +213,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               <input
                 type="date"
                 required
+                max={todayIso}
                 value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
