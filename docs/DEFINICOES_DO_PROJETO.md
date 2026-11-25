@@ -56,9 +56,9 @@ Cada produto eletrônico cadastrado no **Inventário Virtual (RF02)** possui:
 | **RNF01** | Usabilidade clara e intuitiva (meta ≥ 70% aprovação) | Essencial | Parte 1 | Implementado |
 | **RNF02** | Design Web responsivo *Mobile-First* | Essencial | Parte 1 | Implementado |
 | **RNF03** | Segurança e conformidade LGPD (hash de senha, consentimento, anexo protegido) | Essencial | Parte 1 | Implementado |
-| **RF04** | Mapa georreferenciado de pontos de coleta (Geolocation API) | Essencial | Parte 2 | Planejado |
-| **RF05** | Filtro de pontos de coleta por tipo de resíduo aceito | Importante | Parte 2 | Planejado |
-| **RF12** | Painel administrativo para gestores/cooperativas | Importante | Parte 2 | Planejado |
+| **RF04** | Mapa georreferenciado de pontos de coleta (Geolocation API) | Essencial | Parte 2 | Implementado |
+| **RF05** | Filtro de pontos de coleta por tipo de resíduo aceito | Importante | Parte 2 | Implementado |
+| **RF12** | Painel administrativo para gestores/cooperativas | Importante | Parte 2 | Implementado |
 | **RF06** | Registro de descarte e gamificação de pontuação fixa simples | Importante | Parte 3 | Planejado |
 | **RF07** | Feedback de impacto ambiental (metais recuperáveis) | Importante | Parte 3 | Planejado |
 | **RF08** | Histórico de descartes realizados pelo usuário | Importante | Parte 3 | Planejado |

@@ -2,14 +2,18 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { firestoreDb, isFirebaseEnabled } from '../config/firebase';
-import { ElectronicProduct, PublicUser, UserRecord } from '../types/models';
+import { CollectionPoint, ElectronicProduct, PublicUser, UserRecord } from '../types/models';
 
 interface LocalDatabaseSchema {
   users: UserRecord[];
   products: ElectronicProduct[];
+  collectionPoints: CollectionPoint[];
+  meta: { collectionPointsSeeded?: boolean };
 }
 
-const DATA_FILE_PATH = path.resolve(__dirname, '../../data/db.json');
+const DATA_FILE_PATH = process.env.LOCAL_DB_FILE
+  ? path.resolve(process.env.LOCAL_DB_FILE)
+  : path.resolve(__dirname, '../../data/db.json');
 const LOCAL_SECRET =
   process.env.LOCAL_AUTH_SECRET || 'ecociclo-reee-dev-secret-change-in-production';
 
@@ -19,7 +23,7 @@ function ensureLocalDb(): LocalDatabaseSchema {
     fs.mkdirSync(dir, { recursive: true });
   }
   if (!fs.existsSync(DATA_FILE_PATH)) {
-    const initial: LocalDatabaseSchema = { users: [], products: [] };
+    const initial: LocalDatabaseSchema = { users: [], products: [], collectionPoints: [], meta: {} };
     fs.writeFileSync(DATA_FILE_PATH, JSON.stringify(initial, null, 2), 'utf-8');
     return initial;
   }
@@ -29,9 +33,11 @@ function ensureLocalDb(): LocalDatabaseSchema {
     return {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       products: Array.isArray(parsed.products) ? parsed.products : [],
+      collectionPoints: Array.isArray(parsed.collectionPoints) ? parsed.collectionPoints : [],
+      meta: parsed.meta && typeof parsed.meta === 'object' ? parsed.meta : {},
     };
   } catch {
-    return { users: [], products: [] };
+    return { users: [], products: [], collectionPoints: [], meta: {} };
   }
 }
 
@@ -263,4 +269,111 @@ export async function deleteProductRecord(productId: string): Promise<boolean> {
   if (db.products.length === before) return false;
   saveLocalDb(db);
   return true;
+}
+
+// ============================================================================
+// REPOSITÓRIO DE PONTOS DE COLETA / ECOPONTOS (RF04, RF05 e RF12)
+// ============================================================================
+
+export async function listCollectionPoints(): Promise<CollectionPoint[]> {
+  if (isFirebaseEnabled && firestoreDb) {
+    const snap = await firestoreDb.collection('collectionPoints').get();
+    return snap.docs
+      .map((d) => d.data() as CollectionPoint)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  const db = ensureLocalDb();
+  return [...db.collectionPoints].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function getCollectionPointById(id: string): Promise<CollectionPoint | null> {
+  if (isFirebaseEnabled && firestoreDb) {
+    const doc = await firestoreDb.collection('collectionPoints').doc(id).get();
+    return doc.exists ? (doc.data() as CollectionPoint) : null;
+  }
+
+  const db = ensureLocalDb();
+  return db.collectionPoints.find((p) => p.id === id) || null;
+}
+
+export async function createCollectionPointRecord(
+  input: Omit<CollectionPoint, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<CollectionPoint> {
+  const now = new Date().toISOString();
+  const point: CollectionPoint = { ...input, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
+
+  if (isFirebaseEnabled && firestoreDb) {
+    await firestoreDb.collection('collectionPoints').doc(point.id).set(point);
+    return point;
+  }
+
+  const db = ensureLocalDb();
+  db.collectionPoints.push(point);
+  saveLocalDb(db);
+  return point;
+}
+
+export async function updateCollectionPointRecord(
+  id: string,
+  updates: Partial<Omit<CollectionPoint, 'id' | 'createdAt'>>
+): Promise<CollectionPoint | null> {
+  const existing = await getCollectionPointById(id);
+  if (!existing) return null;
+
+  const updated: CollectionPoint = {
+    ...existing,
+    ...updates,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (isFirebaseEnabled && firestoreDb) {
+    await firestoreDb.collection('collectionPoints').doc(id).set(updated);
+    return updated;
+  }
+
+  const db = ensureLocalDb();
+  const index = db.collectionPoints.findIndex((p) => p.id === id);
+  if (index === -1) return null;
+  db.collectionPoints[index] = updated;
+  saveLocalDb(db);
+  return updated;
+}
+
+export async function deleteCollectionPointRecord(id: string): Promise<boolean> {
+  if (isFirebaseEnabled && firestoreDb) {
+    await firestoreDb.collection('collectionPoints').doc(id).delete();
+    return true;
+  }
+
+  const db = ensureLocalDb();
+  const before = db.collectionPoints.length;
+  db.collectionPoints = db.collectionPoints.filter((p) => p.id !== id);
+  if (db.collectionPoints.length === before) return false;
+  saveLocalDb(db);
+  return true;
+}
+
+// Controle para semear os pontos de exemplo apenas UMA vez (não recria se o gestor apagar)
+export async function isCollectionPointSeedDone(): Promise<boolean> {
+  if (isFirebaseEnabled && firestoreDb) {
+    const doc = await firestoreDb.collection('system').doc('seed').get();
+    return Boolean(doc.exists && doc.data()?.collectionPointsSeededAt);
+  }
+  return Boolean(ensureLocalDb().meta.collectionPointsSeeded);
+}
+
+export async function markCollectionPointSeedDone(): Promise<void> {
+  if (isFirebaseEnabled && firestoreDb) {
+    await firestoreDb
+      .collection('system')
+      .doc('seed')
+      .set({ collectionPointsSeededAt: new Date().toISOString() }, { merge: true });
+    return;
+  }
+  const db = ensureLocalDb();
+  db.meta.collectionPointsSeeded = true;
+  saveLocalDb(db);
 }

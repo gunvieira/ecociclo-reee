@@ -1,4 +1,6 @@
 import {
+  CollectionPoint,
+  CollectionPointInput,
   ElectronicProduct,
   InventoryResponse,
   ProductCategory,
@@ -132,6 +134,40 @@ export const api = {
   seedDemoProducts(): Promise<InventoryResponse> {
     return request<InventoryResponse>('/products/seed-demo', {
       method: 'POST',
+    });
+  },
+
+  // ----- Parte 2: Pontos de Coleta (RF04, RF05 e RF12) -----
+
+  listCollectionPoints(wasteType?: ProductCategory): Promise<{ items: CollectionPoint[] }> {
+    const query = wasteType ? `?wasteType=${encodeURIComponent(wasteType)}` : '';
+    return request<{ items: CollectionPoint[] }>(`/collection-points${query}`);
+  },
+
+  listMyCollectionPoints(): Promise<{ items: CollectionPoint[] }> {
+    return request<{ items: CollectionPoint[] }>('/collection-points/mine');
+  },
+
+  createCollectionPoint(input: CollectionPointInput): Promise<{ point: CollectionPoint }> {
+    return request<{ point: CollectionPoint }>('/collection-points', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  updateCollectionPoint(
+    id: string,
+    input: Partial<CollectionPointInput>
+  ): Promise<{ point: CollectionPoint }> {
+    return request<{ point: CollectionPoint }>(`/collection-points/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    });
+  },
+
+  deleteCollectionPoint(id: string): Promise<void> {
+    return request<void>(`/collection-points/${id}`, {
+      method: 'DELETE',
     });
   },
 };

@@ -4,6 +4,7 @@ import express, { Request, Response } from 'express';
 import { isFirebaseEnabled } from './config/firebase';
 import { authRouter } from './routes/authRoutes';
 import { productRouter } from './routes/productRoutes';
+import { collectionPointRouter } from './routes/collectionPointRoutes';
 
 dotenv.config();
 
@@ -25,7 +26,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     project: 'EcoCiclo REEE API',
-    part: 'Parte 1 - Autenticação (RF01), Inventário Virtual (RF02) e Alertas (RF03)',
+    part: 'Parte 2 - RF01 a RF05 + RF12 (Inventário, Alertas, Mapa de Ecopontos e Painel do Gestor)',
     storageMode: isFirebaseEnabled ? 'firebase' : 'local',
     timestamp: new Date().toISOString(),
   });
@@ -33,6 +34,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 
 app.use('/api/auth', authRouter);
 app.use('/api/products', productRouter);
+app.use('/api/collection-points', collectionPointRouter);
 
 app.listen(PORT, () => {
   console.log(`==========================================================`);

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertTriangle,
   Bell,
+  Building2,
   CheckCircle2,
   Clock,
   Cpu,
@@ -9,6 +10,7 @@ import {
   FileText,
   LogOut,
   MapPin,
+  Navigation,
   PackageOpen,
   Plus,
   Recycle,
@@ -17,6 +19,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AuthPage } from './components/AuthPage';
+import { EcopointsView } from './components/EcopointsView';
+import { ManagerPanel } from './components/ManagerPanel';
 import { ProductModal } from './components/ProductModal';
 import { ReceiptViewerModal } from './components/ReceiptViewerModal';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -39,7 +43,17 @@ function formatDateBr(isoDate: string): string {
 
 const DashboardView: React.FC = () => {
   const { user, storageMode, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'inventory' | 'alerts' | 'ecopoints'>('inventory');
+  const [activeTab, setActiveTab] = useState<'inventory' | 'alerts' | 'ecopoints' | 'manager'>(
+    'inventory'
+  );
+  const [ecopointFilter, setEcopointFilter] = useState<ProductCategory | 'all'>('all');
+  const isManager = user?.role === 'manager';
+
+  // Integração Parte 1 → Parte 2: do item no fim da vida útil direto aos ecopontos que o aceitam
+  const openEcopointsFor = (category: ProductCategory | 'all') => {
+    setEcopointFilter(category);
+    setActiveTab('ecopoints');
+  };
   const [products, setProducts] = useState<ElectronicProduct[]>([]);
   const [alerts, setAlerts] = useState<LifecycleAlert[]>([]);
   const [summary, setSummary] = useState<InventorySummary>({
@@ -249,15 +263,28 @@ const DashboardView: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('ecopoints')}
+            onClick={() => openEcopointsFor('all')}
             className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
               activeTab === 'ecopoints'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 hover:bg-slate-100'
             }`}
           >
-            Mapa de Ecopontos (Parte 2)
+            Mapa de Ecopontos (RF04)
           </button>
+          {isManager && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('manager')}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'manager'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              Painel do Gestor (RF12)
+            </button>
+          )}
         </nav>
 
         {/* Banner rápido de alertas críticos na aba de Inventário (RF03) */}
@@ -442,6 +469,17 @@ const DashboardView: React.FC = () => {
                             {product.notes}
                           </p>
                         )}
+
+                        {lifecycle.lifespanStatus !== 'healthy' && (
+                          <button
+                            type="button"
+                            onClick={() => openEcopointsFor(product.category)}
+                            className="mt-3 w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
+                          >
+                            <Navigation className="h-3.5 w-3.5" />
+                            Onde descartar este item?
+                          </button>
+                        )}
                       </div>
 
                       <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
@@ -553,6 +591,17 @@ const DashboardView: React.FC = () => {
                       </div>
                       <h3 className="text-sm font-bold mt-1">{alert.title}</h3>
                       <p className="text-xs mt-1 leading-relaxed opacity-90">{alert.message}</p>
+                      {(alert.type === 'lifespan_reached' ||
+                        alert.type === 'defective_ready_for_disposal') && (
+                        <button
+                          type="button"
+                          onClick={() => openEcopointsFor(alert.category)}
+                          className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/80 hover:bg-white border border-current/20 text-xs font-semibold"
+                        >
+                          <MapPin className="h-3.5 w-3.5" />
+                          Ver ecopontos que aceitam este item
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -561,25 +610,11 @@ const DashboardView: React.FC = () => {
           </section>
         )}
 
-        {/* ABA 3: PRÉVIA DO MAPA DE ECOPONTOS (PARTE 2 - RF04/RF05/RF12) */}
-        {activeTab === 'ecopoints' && (
-          <section className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 text-center space-y-3">
-            <div className="mx-auto h-12 w-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
-              <MapPin className="h-6 w-6 text-emerald-600" />
-            </div>
-            <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-              Próxima Etapa — Parte 2 do Projeto
-            </span>
-            <h2 className="text-lg font-bold text-slate-900">
-              Mapa Georreferenciado de Ecopontos (RF04, RF05 e RF12)
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
-              Conforme o planejamento de entregas, esta seção receberá na <strong>Parte 2</strong> a
-              integração nativa com a <strong>HTML5 Geolocation API</strong>, filtragem por tipo de
-              resíduo eletrônico aceito e o painel de gestão para cooperativas e ONGs.
-            </p>
-          </section>
-        )}
+        {/* ABA 3: MAPA DE ECOPONTOS (RF04 + RF05) */}
+        {activeTab === 'ecopoints' && <EcopointsView initialWasteFilter={ecopointFilter} />}
+
+        {/* ABA 4: PAINEL DO GESTOR (RF12) */}
+        {activeTab === 'manager' && isManager && <ManagerPanel />}
       </main>
 
       {/* Botão Flutuante + Barra Inferior Mobile-First (RNF02) */}
@@ -595,7 +630,11 @@ const DashboardView: React.FC = () => {
         <Plus className="h-6 w-6" />
       </button>
 
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 grid grid-cols-3 py-2 px-2">
+      <nav
+        className={`sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200 grid ${
+          isManager ? 'grid-cols-4' : 'grid-cols-3'
+        } py-2 px-2`}
+      >
         <button
           type="button"
           onClick={() => setActiveTab('inventory')}
@@ -625,7 +664,7 @@ const DashboardView: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => setActiveTab('ecopoints')}
+          onClick={() => openEcopointsFor('all')}
           className={`flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold ${
             activeTab === 'ecopoints' ? 'text-emerald-700' : 'text-slate-500'
           }`}
@@ -633,6 +672,19 @@ const DashboardView: React.FC = () => {
           <MapPin className="h-5 w-5" />
           <span>Ecopontos</span>
         </button>
+
+        {isManager && (
+          <button
+            type="button"
+            onClick={() => setActiveTab('manager')}
+            className={`flex flex-col items-center gap-0.5 py-1 text-[11px] font-semibold ${
+              activeTab === 'manager' ? 'text-emerald-700' : 'text-slate-500'
+            }`}
+          >
+            <Building2 className="h-5 w-5" />
+            <span>Gestor</span>
+          </button>
+        )}
       </nav>
 
       <ProductModal

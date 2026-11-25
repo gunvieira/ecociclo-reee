@@ -61,3 +61,18 @@ export async function requireAuth(
     res.status(401).json({ error: 'Falha na validação de autenticação.' });
   }
 }
+
+// RF12: restringe rotas administrativas ao perfil Gestor de Ponto de Coleta
+export function requireManager(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void {
+  if (req.user?.role !== 'manager') {
+    res.status(403).json({
+      error: 'Acesso restrito a Gestores de Pontos de Coleta (cooperativas, ONGs ou órgãos públicos).',
+    });
+    return;
+  }
+  next();
+}

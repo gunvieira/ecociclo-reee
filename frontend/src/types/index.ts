@@ -112,3 +112,51 @@ export const CONDITION_LABELS: Record<ProductCondition, string> = {
   idle: 'Guardado / Sem uso',
   defective: 'Com defeito / Obsoleto',
 };
+
+// ============================================================================
+// PARTE 2 — Pontos de Coleta / Ecopontos (RF04, RF05 e RF12)
+// ============================================================================
+
+export interface CollectionPoint {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  acceptedWasteTypes: ProductCategory[];
+  openingHours: string;
+  phone: string;
+  description: string;
+  managerId: string;
+  managerName: string;
+  isActive: boolean;
+  isSample: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CollectionPointInput {
+  name: string;
+  address: string;
+  city: string;
+  latitude: number;
+  longitude: number;
+  acceptedWasteTypes: ProductCategory[];
+  openingHours: string;
+  phone: string;
+  description: string;
+  isActive: boolean;
+}
+
+export const WASTE_SHORT_LABELS: Record<ProductCategory, string> = {
+  smartphone: 'Celulares',
+  computer: 'Computadores',
+  tv_monitor: 'TVs / Monitores',
+  appliance: 'Eletroportáteis',
+  battery_accessory: 'Pilhas / Baterias',
+  other: 'Outros',
+};
+
+// Centro aproximado de Londrina-PR (posição inicial do mapa)
+export const LONDRINA_CENTER: [number, number] = [-23.3103, -51.1628];

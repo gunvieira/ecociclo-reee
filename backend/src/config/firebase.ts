@@ -31,7 +31,12 @@ const serviceAccountPath = findServiceAccountJsonPath();
 
 let initializedProjectId: string | null = null;
 
-if (!admin.apps.length) {
+// Permite forçar o modo local (testes automatizados / desenvolvimento offline)
+const forceLocalStorage = process.env.FORCE_LOCAL_STORAGE === 'true';
+
+if (forceLocalStorage) {
+  console.log('[Storage] FORCE_LOCAL_STORAGE=true — usando Modo Local Persistente.');
+} else if (!admin.apps.length) {
   if (envProjectId && envClientEmail && envPrivateKey) {
     admin.initializeApp({
       credential: admin.credential.cert({
@@ -64,6 +69,6 @@ if (!admin.apps.length) {
   initializedProjectId = admin.app().options.projectId || 'firebase-project';
 }
 
-export const isFirebaseEnabled = admin.apps.length > 0;
+export const isFirebaseEnabled = !forceLocalStorage && admin.apps.length > 0;
 export const firestoreDb = isFirebaseEnabled ? admin.firestore() : null;
 export const firebaseAuth = isFirebaseEnabled ? admin.auth() : null;

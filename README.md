@@ -57,8 +57,8 @@ Aplicação Web (Mobile-First / PWA) para gestão do ciclo de vida de equipament
   - **RF02:** **Inventário Virtual** de eletrônicos com categoria, data de compra, garantia, vida útil estimada e anexo de Nota Fiscal.
   - **RF03:** **Alertas Automáticos** de proximidade do fim da garantia e do fim da vida útil estimada.
   - **RNF01 / RNF02:** Interface *mobile-first* responsiva e intuitiva.
-- [ ] **Parte 2 (Geolocalização e Ecopontos):**
-  - **RF04 & RF05:** Mapa georreferenciado de pontos de coleta (Geolocation API + visualização/filtros por resíduo) e **RF12** (Painel do Gestor/Cooperativa).
+- [x] **Parte 2 (Geolocalização e Ecopontos):**
+  - **RF04 & RF05:** Mapa georreferenciado de pontos de coleta (Leaflet + OpenStreetMap + HTML5 Geolocation API, ordenação por distância e filtro por tipo de resíduo) e **RF12** (Painel do Gestor/Cooperativa para cadastrar, editar, ativar/desativar e excluir pontos).
 - [ ] **Parte 3 (Descarte, Gamificação e Impacto Ambiental):**
   - **RF06, RF07 & RF08:** Registro de descarte, pontuação fixa simples (*inspirado no Ecotrash*), tela de feedback químico/ambiental e histórico.
 - [ ] **Parte 4 (Engajamento Complementar):**
