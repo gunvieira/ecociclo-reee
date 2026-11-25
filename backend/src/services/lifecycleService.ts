@@ -15,11 +15,13 @@ export const DEFAULT_LIFESPAN_MONTHS: Record<ProductCategory, number> = {
   other: 48,
 };
 
+// Soma meses limitando ao último dia do mês de destino (31/01 + 1 mês = 28 ou 29/02).
+// O setUTCMonth puro "transbordaria" para março.
 function addMonthsToIsoDate(isoDate: string, months: number): Date {
   const [year, month, day] = isoDate.split('-').map(Number);
-  const date = new Date(Date.UTC(year, (month || 1) - 1, day || 1));
-  date.setUTCMonth(date.getUTCMonth() + months);
-  return date;
+  const targetMonthIndex = (month || 1) - 1 + months;
+  const lastDayOfTargetMonth = new Date(Date.UTC(year, targetMonthIndex + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, targetMonthIndex, Math.min(day || 1, lastDayOfTargetMonth)));
 }
 
 function parseIsoDateUtc(isoDate: string): Date {
