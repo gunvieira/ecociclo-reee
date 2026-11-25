@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  AlertCircle,
   AlertTriangle,
   Bell,
   Building2,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 import { AuthPage } from './components/AuthPage';
 import { EcopointsView } from './components/EcopointsView';
@@ -72,6 +74,10 @@ const DashboardView: React.FC = () => {
     productName: string;
   } | null>(null);
   const [seeding, setSeeding] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const errorMessage = (err: unknown, fallback: string) =>
+    err instanceof Error ? err.message : fallback;
 
   const loadInventory = useCallback(async () => {
     setLoadingData(true);
@@ -81,7 +87,7 @@ const DashboardView: React.FC = () => {
       setAlerts(data.alerts);
       setSummary(data.summary);
     } catch (err) {
-      console.error('Erro ao carregar inventário:', err);
+      setActionError(errorMessage(err, 'Não foi possível carregar seu inventário.'));
     } finally {
       setLoadingData(false);
     }
@@ -105,17 +111,25 @@ const DashboardView: React.FC = () => {
       `Deseja remover "${product.name}" e seus anexos do Inventário Virtual?`
     );
     if (!confirmed) return;
-    await api.deleteProduct(product.id);
-    await loadInventory();
+    setActionError(null);
+    try {
+      await api.deleteProduct(product.id);
+      await loadInventory();
+    } catch (err) {
+      setActionError(errorMessage(err, 'Não foi possível excluir o equipamento.'));
+    }
   };
 
   const handleSeedDemo = async () => {
     setSeeding(true);
+    setActionError(null);
     try {
       const data = await api.seedDemoProducts();
       setProducts(data.items);
       setAlerts(data.alerts);
       setSummary(data.summary);
+    } catch (err) {
+      setActionError(errorMessage(err, 'Não foi possível gerar os exemplos.'));
     } finally {
       setSeeding(false);
     }
@@ -175,6 +189,24 @@ const DashboardView: React.FC = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 pt-5 space-y-5">
+        {actionError && (
+          <div
+            role="alert"
+            className="rounded-2xl bg-red-50 border border-red-200 p-3.5 flex items-start gap-2.5 text-sm text-red-700"
+          >
+            <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+            <span className="flex-1">{actionError}</span>
+            <button
+              type="button"
+              onClick={() => setActionError(null)}
+              className="p-0.5 rounded-md text-red-400 hover:text-red-700"
+              aria-label="Fechar aviso"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Cards de Resumo do Ciclo de Vida */}
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-xs">
