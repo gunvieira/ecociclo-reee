@@ -100,6 +100,24 @@ npm run dev
 
 Acesse `http://localhost:5173` no navegador.
 
+### 4. Executar os testes
+
+Na raiz do projeto (roda backend e frontend):
+
+```powershell
+npm test
+```
+
+Ou dentro de cada pasta: `npm test` (execução única) e `npm run test:watch` (reexecuta ao salvar).
+
+Os testes do backend rodam sempre em **Modo Local** com um banco temporário descartável — nunca acessam o Firestore, mesmo com a chave configurada.
+
+| Pacote | O que é testado |
+| :--- | :--- |
+| Backend — unitários | Regras de garantia/vida útil e alertas (RF03), validação de produtos e nota fiscal (RF02), validação de ecopontos (RF12), hash de senha e token de sessão |
+| Backend — integração (API) | Cadastro e login, rotas protegidas, isolamento do inventário entre usuários, permissões do gestor e visibilidade de pontos desativados |
+| Frontend | Cálculo de distância e datas, cliente HTTP (token, mensagens de erro, respostas 204) |
+
 ---
 
 ## Fluxo de Trabalho com Git e GitHub para a Equipe
