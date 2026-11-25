@@ -36,12 +36,7 @@ import {
   ProductCategory,
   ReceiptAttachment,
 } from './types';
-
-function formatDateBr(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-');
-  if (!y || !m || !d) return isoDate;
-  return `${d}/${m}/${y}`;
-}
+import { formatDateBr } from './utils/date';
 
 const DashboardView: React.FC = () => {
   const { user, storageMode, logout } = useAuth();

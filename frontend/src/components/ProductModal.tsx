@@ -9,6 +9,7 @@ import {
   ProductCondition,
   ReceiptAttachment,
 } from '../types';
+import { toLocalIsoDate } from '../utils/date';
 
 interface ProductModalProps {
   isOpen: boolean;
@@ -25,12 +26,6 @@ interface ProductModalProps {
     notes: string;
     receipt: ReceiptAttachment | null;
   }) => Promise<void>;
-}
-
-// toISOString() usa UTC: no Brasil, após as 21h, retornaria a data do dia seguinte
-function toLocalIsoDate(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
