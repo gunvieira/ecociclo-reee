@@ -17,6 +17,8 @@ const DATA_FILE_PATH = process.env.LOCAL_DB_FILE
 const LOCAL_SECRET =
   process.env.LOCAL_AUTH_SECRET || 'ecociclo-reee-dev-secret-change-in-production';
 
+// Modo local lê e regrava o arquivo inteiro a cada operação: simples, mas sem controle
+// de concorrência e com custo crescente. Adequado apenas para desenvolvimento.
 function ensureLocalDb(): LocalDatabaseSchema {
   const dir = path.dirname(DATA_FILE_PATH);
   if (!fs.existsSync(dir)) {

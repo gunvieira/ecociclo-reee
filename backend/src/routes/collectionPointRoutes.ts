@@ -107,6 +107,7 @@ collectionPointRouter.put(
         return;
       }
 
+      // Mescla com o registro atual para aceitar atualizações parciais (ex.: só isActive)
       const result = sanitizeCollectionPointPayload({ ...existing, ...(req.body || {}) });
       if (!result.ok) {
         res.status(400).json({ error: result.error });
