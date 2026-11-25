@@ -13,6 +13,7 @@ import {
   updateProductRecord,
 } from '../services/storageService';
 import {
+  ElectronicProduct,
   ProductCategory,
   ProductCondition,
   ReceiptAttachment,
@@ -38,6 +39,8 @@ const ALLOWED_RECEIPT_MIMES = [
   'application/pdf',
 ];
 
+// Atenção: no Firestore o documento inteiro tem limite de 1 MiB, e o Base64 aumenta o
+// arquivo em ~33%. Na prática, notas acima de ~700 KB falham no modo Firebase.
 const MAX_RECEIPT_BYTES = 5 * 1024 * 1024; // 5 MB
 
 function validateReceiptInput(
@@ -48,10 +51,10 @@ function validateReceiptInput(
 
   const candidate = rawReceipt as Partial<ReceiptAttachment>;
   if (
-    !candidate.fileName ||
-    !candidate.mimeType ||
-    !candidate.dataUrl ||
-    typeof candidate.sizeBytes !== 'number'
+    typeof candidate.fileName !== 'string' ||
+    typeof candidate.mimeType !== 'string' ||
+    typeof candidate.dataUrl !== 'string' ||
+    !candidate.fileName
   ) {
     return { valid: false, error: 'Formato do anexo de Nota Fiscal inválido.' };
   }
@@ -63,12 +66,18 @@ function validateReceiptInput(
     };
   }
 
-  if (candidate.sizeBytes > MAX_RECEIPT_BYTES) {
-    return { valid: false, error: 'O arquivo da Nota Fiscal deve ter no máximo 5 MB.' };
+  const prefix = `data:${candidate.mimeType};base64,`;
+  if (!candidate.dataUrl.startsWith(prefix)) {
+    return { valid: false, error: 'Conteúdo codificado da Nota Fiscal inválido.' };
   }
 
-  if (!candidate.dataUrl.startsWith(`data:${candidate.mimeType};base64,`)) {
-    return { valid: false, error: 'Conteúdo codificado da Nota Fiscal inválido.' };
+  // O tamanho é medido no próprio conteúdo; o sizeBytes enviado pelo cliente é ignorado
+  const sizeBytes = Buffer.byteLength(candidate.dataUrl.slice(prefix.length), 'base64');
+  if (sizeBytes === 0) {
+    return { valid: false, error: 'O arquivo da Nota Fiscal está vazio.' };
+  }
+  if (sizeBytes > MAX_RECEIPT_BYTES) {
+    return { valid: false, error: 'O arquivo da Nota Fiscal deve ter no máximo 5 MB.' };
   }
 
   return {
@@ -76,9 +85,86 @@ function validateReceiptInput(
     receipt: {
       fileName: candidate.fileName.slice(0, 120),
       mimeType: candidate.mimeType,
-      sizeBytes: candidate.sizeBytes,
+      sizeBytes,
       dataUrl: candidate.dataUrl,
       uploadedAt: new Date().toISOString(),
+    },
+  };
+}
+
+type ProductFields = Pick<
+  ElectronicProduct,
+  | 'name'
+  | 'brand'
+  | 'category'
+  | 'purchaseDate'
+  | 'warrantyMonths'
+  | 'estimatedLifespanMonths'
+  | 'condition'
+  | 'notes'
+>;
+
+function isValidIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  // Rejeita datas inexistentes como 2025-02-30, que o Date "corrige" silenciosamente
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d;
+}
+
+function optionalInt(value: unknown, min: number, max: number): number | null | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= min && n <= max ? Math.round(n) : null;
+}
+
+// Validação única usada no cadastro e na edição de equipamentos (RF02)
+function sanitizeProductPayload(
+  raw: Record<string, unknown>
+): { ok: true; data: ProductFields } | { ok: false; error: string } {
+  const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+  if (name.length < 2) {
+    return { ok: false, error: 'Informe o nome ou modelo do equipamento eletrônico.' };
+  }
+
+  if (!isValidIsoDate(raw.purchaseDate)) {
+    return { ok: false, error: 'Informe uma data de compra válida (AAAA-MM-DD).' };
+  }
+
+  if (raw.category !== undefined && !VALID_CATEGORIES.includes(raw.category as ProductCategory)) {
+    return { ok: false, error: 'Categoria de equipamento inválida.' };
+  }
+  const category = (raw.category as ProductCategory | undefined) ?? 'other';
+
+  if (raw.condition !== undefined && !VALID_CONDITIONS.includes(raw.condition as ProductCondition)) {
+    return { ok: false, error: 'Estado de conservação inválido.' };
+  }
+  const condition = (raw.condition as ProductCondition | undefined) ?? 'in_use';
+
+  const warrantyMonths = optionalInt(raw.warrantyMonths, 0, 120);
+  if (warrantyMonths === null) {
+    return { ok: false, error: 'A garantia deve estar entre 0 e 120 meses.' };
+  }
+
+  const estimatedLifespanMonths = optionalInt(raw.estimatedLifespanMonths, 6, 240);
+  if (estimatedLifespanMonths === null) {
+    return { ok: false, error: 'A vida útil estimada deve estar entre 6 e 240 meses.' };
+  }
+
+  const brand = typeof raw.brand === 'string' ? raw.brand.trim() : '';
+  const notes = typeof raw.notes === 'string' ? raw.notes.trim() : '';
+
+  return {
+    ok: true,
+    data: {
+      name: name.slice(0, 120),
+      brand: (brand || 'Não informada').slice(0, 60),
+      category,
+      purchaseDate: raw.purchaseDate,
+      warrantyMonths: warrantyMonths ?? 12,
+      estimatedLifespanMonths: estimatedLifespanMonths ?? DEFAULT_LIFESPAN_MONTHS[category],
+      condition,
+      notes: notes.slice(0, 1000),
     },
   };
 }
@@ -102,76 +188,23 @@ productRouter.get('/', async (req: AuthenticatedRequest, res: Response): Promise
 productRouter.post('/', async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const {
-      name,
-      brand,
-      category,
-      purchaseDate,
-      warrantyMonths,
-      estimatedLifespanMonths,
-      condition,
-      notes,
-      receipt,
-    } = req.body as {
-      name?: string;
-      brand?: string;
-      category?: ProductCategory;
-      purchaseDate?: string;
-      warrantyMonths?: number;
-      estimatedLifespanMonths?: number;
-      condition?: ProductCondition;
-      notes?: string;
-      receipt?: unknown;
-    };
+    const body = (req.body || {}) as Record<string, unknown>;
 
-    if (!name || name.trim().length < 2) {
-      res.status(400).json({ error: 'Informe o nome ou modelo do equipamento eletrônico.' });
+    const result = sanitizeProductPayload(body);
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
       return;
     }
 
-    const safeCategory: ProductCategory = VALID_CATEGORIES.includes(category as ProductCategory)
-      ? (category as ProductCategory)
-      : 'other';
-
-    if (!purchaseDate || !/^\d{4}-\d{2}-\d{2}$/.test(purchaseDate)) {
-      res.status(400).json({ error: 'Informe uma data de compra válida (AAAA-MM-DD).' });
-      return;
-    }
-
-    const parsedWarranty =
-      typeof warrantyMonths === 'number' && warrantyMonths >= 0 && warrantyMonths <= 120
-        ? Math.round(warrantyMonths)
-        : 12;
-
-    const parsedLifespan =
-      typeof estimatedLifespanMonths === 'number' &&
-      estimatedLifespanMonths >= 6 &&
-      estimatedLifespanMonths <= 240
-        ? Math.round(estimatedLifespanMonths)
-        : DEFAULT_LIFESPAN_MONTHS[safeCategory];
-
-    const safeCondition: ProductCondition = VALID_CONDITIONS.includes(
-      condition as ProductCondition
-    )
-      ? (condition as ProductCondition)
-      : 'in_use';
-
-    const receiptCheck = validateReceiptInput(receipt);
+    const receiptCheck = validateReceiptInput(body.receipt);
     if (!receiptCheck.valid) {
       res.status(400).json({ error: receiptCheck.error });
       return;
     }
 
     const created = await createProductRecord({
+      ...result.data,
       userId,
-      name: name.trim(),
-      brand: (brand || '').trim() || 'Não informada',
-      category: safeCategory,
-      purchaseDate,
-      warrantyMonths: parsedWarranty,
-      estimatedLifespanMonths: parsedLifespan,
-      condition: safeCondition,
-      notes: notes?.trim() || '',
       receipt: receiptCheck.receipt ?? null,
     });
 
@@ -199,45 +232,23 @@ productRouter.put('/:id', async (req: AuthenticatedRequest, res: Response): Prom
       return;
     }
 
-    const {
-      name,
-      brand,
-      category,
-      purchaseDate,
-      warrantyMonths,
-      estimatedLifespanMonths,
-      condition,
-      notes,
-      receipt,
-    } = req.body as Partial<{
-      name: string;
-      brand: string;
-      category: ProductCategory;
-      purchaseDate: string;
-      warrantyMonths: number;
-      estimatedLifespanMonths: number;
-      condition: ProductCondition;
-      notes: string;
-      receipt: unknown;
-    }>;
+    const body = (req.body || {}) as Record<string, unknown>;
 
-    const receiptCheck = validateReceiptInput(receipt);
+    // Mescla com o registro atual para aceitar atualizações parciais
+    const result = sanitizeProductPayload({ ...existing, ...body });
+    if (!result.ok) {
+      res.status(400).json({ error: result.error });
+      return;
+    }
+
+    const receiptCheck = validateReceiptInput(body.receipt);
     if (!receiptCheck.valid) {
       res.status(400).json({ error: receiptCheck.error });
       return;
     }
 
     const updated = await updateProductRecord(productId, {
-      ...(name !== undefined ? { name: name.trim() } : {}),
-      ...(brand !== undefined ? { brand: brand.trim() } : {}),
-      ...(category && VALID_CATEGORIES.includes(category) ? { category } : {}),
-      ...(purchaseDate && /^\d{4}-\d{2}-\d{2}$/.test(purchaseDate) ? { purchaseDate } : {}),
-      ...(typeof warrantyMonths === 'number' ? { warrantyMonths: Math.round(warrantyMonths) } : {}),
-      ...(typeof estimatedLifespanMonths === 'number'
-        ? { estimatedLifespanMonths: Math.round(estimatedLifespanMonths) }
-        : {}),
-      ...(condition && VALID_CONDITIONS.includes(condition) ? { condition } : {}),
-      ...(notes !== undefined ? { notes: notes.trim() } : {}),
+      ...result.data,
       ...(receiptCheck.receipt !== undefined ? { receipt: receiptCheck.receipt } : {}),
     });
 
