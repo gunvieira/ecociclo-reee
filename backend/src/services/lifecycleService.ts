@@ -153,7 +153,7 @@ export function computeProductLifecycle(
       productId: product.id,
       productName: product.name,
       category: product.category,
-      type: 'warranty_expired',
+      type: 'idle_reminder',
       severity: 'info',
       title: 'Aparelho guardado sem uso',
       message: `"${product.name}" está marcado como parado/reserva. Lembre-se de não acumular eletrônicos sem uso indefinidamente — considere doação ou reciclagem REEE.`,

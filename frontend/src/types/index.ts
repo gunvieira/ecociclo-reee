@@ -36,7 +36,7 @@ export interface LifecycleAlert {
   category: ProductCategory;
   type:
     | 'warranty_expiring'
-    | 'warranty_expired'
+    | 'idle_reminder'
     | 'lifespan_nearing_end'
     | 'lifespan_reached'
     | 'defective_ready_for_disposal';

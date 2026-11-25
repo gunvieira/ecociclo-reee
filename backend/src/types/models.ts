@@ -50,7 +50,7 @@ export type AlertSeverity = 'critical' | 'warning' | 'info';
 
 export type AlertType =
   | 'warranty_expiring'
-  | 'warranty_expired'
+  | 'idle_reminder'
   | 'lifespan_nearing_end'
   | 'lifespan_reached'
   | 'defective_ready_for_disposal';
